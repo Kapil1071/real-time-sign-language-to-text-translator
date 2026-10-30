@@ -10,19 +10,28 @@ from flask import Flask, render_template, Response, jsonify, request
 
 app = Flask(__name__)
 IMG_SIZE = 64
-CONFIDENCE_THRESHOLD = .80
-PREDICT_EVERY = 3
-STABLE_PREDICTIONS = 5
-COOLDOWN_SECONDS = 1.0
+CONFIDENCE_THRESHOLD = .75
+PREDICT_EVERY = 2
+STABLE_PREDICTIONS = 4
+COOLDOWN_SECONDS = 0.9
 PADDING = 25
 JPEG_QUALITY = 70
 CAMERA_INDEX = 0
-# If your training images are NOT tight hand crops, collect/retrain with matching crops.
-model_path = "model.keras" if os.path.exists("model.keras") else "model.h5"
-if not os.path.exists(model_path) or not os.path.exists("labels.json"):
-    raise FileNotFoundError("Run train_model_optimized.py first (model and labels missing).")
+
+# Prefer robust landmark vector model (immune to lighting & background) if available
+if os.path.exists("landmark_model.keras") or os.path.exists("landmark_model.h5"):
+    model_path = "landmark_model.keras" if os.path.exists("landmark_model.keras") else "landmark_model.h5"
+    labels_path = "landmark_labels.json"
+    USE_LANDMARKS = True
+    print(f"[Loaded] Landmark Vector Model: {model_path}")
+else:
+    model_path = "model.keras" if os.path.exists("model.keras") else "model.h5"
+    labels_path = "labels.json"
+    USE_LANDMARKS = False
+    print(f"[Loaded] Standard CNN Model: {model_path}")
+
 model = keras.models.load_model(model_path, compile=False)
-with open("labels.json", encoding="utf-8") as f:
+with open(labels_path, encoding="utf-8") as f:
     LABELS = json.load(f)
 mp_hands = mp.solutions.hands
 mp_draw = mp.solutions.drawing_utils
@@ -50,6 +59,18 @@ def publish(data):
         latest_jpeg = data
         frame_sequence += 1
         frame_condition.notify_all()
+
+def extract_landmark_vector(landmarks):
+    # 21 landmarks: relative to wrist (index 0)
+    base_x, base_y, base_z = landmarks[0].x, landmarks[0].y, landmarks[0].z
+    coords = []
+    for p in landmarks:
+        coords.extend([p.x - base_x, p.y - base_y, p.z - base_z])
+    coords = np.array(coords, dtype=np.float32)
+    max_val = np.max(np.abs(coords))
+    if max_val > 0:
+        coords /= max_val
+    return np.expand_dims(coords, axis=0)
 
 def crop_for_model(clean_frame, box):
     x1, y1, x2, y2 = box
@@ -92,8 +113,8 @@ def capture_worker():
     candidate = None
     stable = 0
     last_accepted = 0.0
-    # Create one MediaPipe tracker for this single capture thread.
-    with mp_hands.Hands(max_num_hands=1, min_detection_confidence=.7,
+    # Robust tracking configuration: 0.5 confidence for smooth detection across all angles & distances
+    with mp_hands.Hands(max_num_hands=1, min_detection_confidence=.5,
                         min_tracking_confidence=.5) as hands:
         while True:
             with lock:
@@ -133,9 +154,16 @@ def capture_worker():
                     mp_draw.draw_landmarks(frame, landmarks, mp_hands.HAND_CONNECTIONS)
                     cv2.rectangle(frame, box[:2], box[2:], (16, 185, 129), 2)
                     if frame_no % PREDICT_EVERY == 0:
-                        tensor = crop_for_model(clean, box)
-                        if tensor is not None:
-                            scores = model(tensor, training=False).numpy()[0]
+                        scores = None
+                        if USE_LANDMARKS:
+                            vec = extract_landmark_vector(landmarks.landmark)
+                            scores = model(vec, training=False).numpy()[0]
+                        else:
+                            tensor = crop_for_model(clean, box)
+                            if tensor is not None:
+                                scores = model(tensor, training=False).numpy()[0]
+                        
+                        if scores is not None:
                             idx = int(np.argmax(scores))
                             label, conf = LABELS[idx], float(scores[idx])
                             with lock:
