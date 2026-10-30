@@ -1,0 +1,11 @@
+flask
+opencv-python
+mediapipe==0.10.14
+tensorflow-cpu==2.15.0
+keras==2.15.0
+protobuf==4.25.3
+numpy==1.26.4
+pyttsx3
+pillow
+scikit-learn
+matplotlib

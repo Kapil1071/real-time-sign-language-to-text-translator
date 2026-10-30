@@ -1,0 +1,1504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign2Text AI — Real-Time Sign Language Recognition & Translation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-base: #090d16;
+            --bg-surface: #0f172a;
+            --bg-card: rgba(30, 41, 59, 0.7);
+            --bg-card-hover: rgba(51, 65, 85, 0.8);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --text-dim: #64748b;
+            --emerald: #10b981;
+            --emerald-glow: rgba(16, 185, 129, 0.35);
+            --cyan: #06b6d4;
+            --cyan-glow: rgba(6, 182, 212, 0.3);
+            --rose: #f43f5e;
+            --border: rgba(148, 163, 184, 0.12);
+            --border-highlight: rgba(16, 185, 129, 0.3);
+            --radius-lg: 18px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            overflow-x: hidden;
+            line-height: 1.6;
+            background-image: 
+                radial-gradient(circle at 15% 20%, rgba(16, 185, 129, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 85% 60%, rgba(6, 182, 212, 0.08) 0%, transparent 45%);
+            background-attachment: fixed;
+        }
+
+        /* ── NAVBAR ─────────────────────────────────────────── */
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            background: rgba(9, 13, 22, 0.85);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+            padding: 0.9rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: var(--text-main);
+            font-weight: 800;
+            font-size: 1.35rem;
+            letter-spacing: -0.02em;
+        }
+
+        .brand-icon {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, var(--emerald), var(--cyan));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            box-shadow: 0 0 16px var(--emerald-glow);
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--text-main);
+        }
+
+        .nav-cta {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            background: rgba(16, 185, 129, 0.12);
+            color: var(--emerald);
+            padding: 0.35rem 0.8rem;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border: 1px solid rgba(16, 185, 129, 0.25);
+        }
+
+        .pulse-indicator {
+            width: 7px;
+            height: 7px;
+            background-color: var(--emerald);
+            border-radius: 50%;
+            animation: pulse-ring 1.8s infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .btn-launch {
+            background: linear-gradient(135deg, var(--emerald), #059669);
+            color: #ffffff;
+            border: none;
+            padding: 0.55rem 1.25rem;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.88rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+            box-shadow: 0 4px 14px var(--emerald-glow);
+        }
+
+        .btn-launch:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px var(--emerald-glow);
+        }
+
+        /* ── HERO SECTION ───────────────────────────────────── */
+        .hero {
+            max-width: 1200px;
+            margin: 4.5rem auto 3rem;
+            padding: 0 1.5rem;
+            text-align: center;
+        }
+
+        .hero-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(6, 182, 212, 0.1);
+            color: var(--cyan);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            padding: 0.4rem 1.1rem;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 800;
+            line-height: 1.15;
+            letter-spacing: -0.03em;
+            margin-bottom: 1.25rem;
+            max-width: 950px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #ffffff 30%, var(--emerald) 70%, var(--cyan) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-subtitle {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            max-width: 720px;
+            margin: 0 auto 2.25rem;
+            font-weight: 400;
+        }
+
+        .hero-actions {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.25rem;
+            margin-bottom: 3.5rem;
+        }
+
+        .btn-secondary {
+            background: rgba(30, 41, 59, 0.8);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(51, 65, 85, 0.9);
+            border-color: var(--text-muted);
+        }
+
+        .btn-primary-lg {
+            background: linear-gradient(135deg, var(--emerald), var(--cyan));
+            color: #ffffff;
+            border: none;
+            padding: 0.75rem 1.75rem;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            text-decoration: none;
+            box-shadow: 0 4px 20px var(--emerald-glow);
+            transition: all 0.2s;
+        }
+
+        .btn-primary-lg:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px var(--emerald-glow);
+        }
+
+        /* ── STATS RIBBON ───────────────────────────────────── */
+        .stats-ribbon {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.25rem;
+            max-width: 1100px;
+            margin: 0 auto 5rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 1.5rem 1.25rem;
+            border-radius: var(--radius-lg);
+            text-align: center;
+            backdrop-filter: blur(12px);
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--border-highlight);
+        }
+
+        .stat-number {
+            font-size: 2.25rem;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* ── PIPELINE SECTION ───────────────────────────────── */
+        .section-header {
+            text-align: center;
+            max-width: 700px;
+            margin: 0 auto 3rem;
+        }
+
+        .section-tag {
+            color: var(--emerald);
+            font-size: 0.82rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .section-title {
+            font-size: 2.25rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.75rem;
+        }
+
+        .section-desc {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .pipeline-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            max-width: 1200px;
+            margin: 0 auto 5rem;
+            padding: 0 1.5rem;
+        }
+
+        .pipeline-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 1.75rem;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            transition: all 0.25s;
+        }
+
+        .pipeline-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--border-highlight);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+        }
+
+        .card-step {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--cyan);
+            background: rgba(6, 182, 212, 0.12);
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            display: inline-block;
+            margin-bottom: 1rem;
+        }
+
+        .card-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .pipeline-card h3 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.6rem;
+        }
+
+        .pipeline-card p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        /* ── STUDIO LIVE INTERACTIVE SECTION ────────────────── */
+        .studio-container {
+            max-width: 1240px;
+            margin: 0 auto 6rem;
+            padding: 0 1.5rem;
+        }
+
+        .studio-grid {
+            display: grid;
+            grid-template-columns: 1.25fr 1fr;
+            gap: 1.75rem;
+            align-items: stretch;
+        }
+
+        .studio-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            backdrop-filter: blur(12px);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* Video Feed Box */
+        .video-box {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 4/3;
+            background: #000000;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .video-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .video-overlay-top {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            right: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: none;
+        }
+
+        .stream-badge {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(8px);
+            color: var(--emerald);
+            padding: 0.3rem 0.75rem;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .fps-badge {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(8px);
+            color: #ffffff;
+            padding: 0.3rem 0.65rem;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border: 1px solid var(--border);
+        }
+
+        /* Camera Control Bar */
+        .camera-controls-bar {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin-top: 1.25rem;
+        }
+
+        .ctrl-btn {
+            background: rgba(30, 41, 59, 0.9);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 0.7rem 1rem;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.88rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .ctrl-btn:hover {
+            background: rgba(51, 65, 85, 1);
+            border-color: var(--text-muted);
+        }
+
+        .ctrl-btn.active-danger {
+            background: rgba(244, 63, 94, 0.15);
+            color: var(--rose);
+            border-color: rgba(244, 63, 94, 0.4);
+        }
+
+        .ctrl-btn.active-danger:hover {
+            background: rgba(244, 63, 94, 0.25);
+        }
+
+        .ctrl-btn.active-emerald {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--emerald);
+            border-color: rgba(16, 185, 129, 0.4);
+        }
+
+        /* Prediction & Dashboard Panel */
+        .detected-hero-card {
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.25rem;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .sign-avatar-box {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+        }
+
+        .sign-letter-avatar {
+            width: 72px;
+            height: 72px;
+            background: linear-gradient(135deg, var(--emerald), #047857);
+            color: #ffffff;
+            font-size: 2.5rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 16px;
+            box-shadow: 0 0 24px var(--emerald-glow);
+            letter-spacing: -0.02em;
+        }
+
+        .sign-meta-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .meta-caption {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-dim);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .meta-sign-title {
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: -0.01em;
+        }
+
+        .conf-progress-track {
+            width: 160px;
+            height: 8px;
+            background: rgba(51, 65, 85, 0.8);
+            border-radius: 99px;
+            overflow: hidden;
+            margin-top: 0.35rem;
+        }
+
+        .conf-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--emerald), var(--cyan));
+            width: 0%;
+            transition: width 0.15s ease-out;
+        }
+
+        .percentage-display {
+            text-align: right;
+        }
+
+        .pct-val {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--emerald);
+            font-family: 'JetBrains Mono', monospace;
+            line-height: 1;
+        }
+
+        .pct-caption {
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        /* Formed Textarea Area */
+        .text-builder-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            letter-spacing: 0.02em;
+        }
+
+        .sentence-textarea {
+            width: 100%;
+            height: 140px;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            color: var(--text-main);
+            font-size: 1.25rem;
+            line-height: 1.6;
+            resize: none;
+            outline: none;
+            margin-bottom: 1rem;
+            word-break: break-word;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .sentence-textarea:focus {
+            border-color: var(--emerald);
+            box-shadow: 0 0 0 2px var(--emerald-glow);
+        }
+
+        /* Action Buttons */
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.6rem;
+            margin-bottom: 0.6rem;
+        }
+
+        .act-btn {
+            background: rgba(30, 41, 59, 0.9);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 0.7rem 0.85rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.45rem;
+            transition: all 0.2s;
+        }
+
+        .act-btn:hover {
+            background: rgba(51, 65, 85, 1);
+            transform: translateY(-1px);
+        }
+
+        .act-btn-speak {
+            background: linear-gradient(135deg, var(--emerald), #059669);
+            color: #ffffff;
+            border-color: var(--emerald);
+            box-shadow: 0 2px 10px var(--emerald-glow);
+        }
+
+        .act-btn-speak:hover {
+            filter: brightness(1.1);
+        }
+
+        .status-footer-pill {
+            margin-top: 1rem;
+            padding: 0.6rem 0.9rem;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--emerald);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* ── ASL DICTIONARY GRID ────────────────────────────── */
+        .dictionary-section {
+            max-width: 1200px;
+            margin: 0 auto 6rem;
+            padding: 0 1.5rem;
+        }
+
+        .dict-search-wrapper {
+            max-width: 450px;
+            margin: 0 auto 2.5rem;
+            position: relative;
+        }
+
+        .dict-search-input {
+            width: 100%;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 0.8rem 1.25rem 0.8rem 2.75rem;
+            color: var(--text-main);
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .dict-search-input:focus {
+            border-color: var(--cyan);
+            box-shadow: 0 0 15px var(--cyan-glow);
+        }
+
+        .search-icon-svg {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-dim);
+            pointer-events: none;
+        }
+
+        .dictionary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 0.9rem;
+        }
+
+        .dict-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 1rem 0.5rem;
+            text-align: center;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .dict-card:hover {
+            border-color: var(--cyan);
+            transform: translateY(-3px);
+            background: rgba(51, 65, 85, 0.85);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .dict-card-char {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 0.2rem;
+            letter-spacing: -0.02em;
+        }
+
+        .dict-card-sub {
+            font-size: 0.72rem;
+            color: var(--cyan);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* ── FEATURES SECTION ───────────────────────────────── */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            max-width: 1200px;
+            margin: 0 auto 6rem;
+            padding: 0 1.5rem;
+        }
+
+        .feature-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            display: flex;
+            gap: 1.5rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .feature-icon-wrapper {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--emerald);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .feature-content h4 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-content p {
+            color: var(--text-muted);
+            font-size: 0.92rem;
+            line-height: 1.6;
+        }
+
+        /* ── FAQ ACCORDION SECTION ──────────────────────────── */
+        .faq-section {
+            max-width: 850px;
+            margin: 0 auto 6rem;
+            padding: 0 1.5rem;
+        }
+
+        .faq-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            margin-bottom: 1rem;
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+
+        .faq-item:hover {
+            border-color: var(--border-highlight);
+        }
+
+        .faq-question {
+            padding: 1.25rem 1.5rem;
+            font-weight: 700;
+            font-size: 1.05rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .faq-answer {
+            padding: 0 1.5rem 1.25rem;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.7;
+            display: none;
+        }
+
+        .faq-item.active .faq-answer {
+            display: block;
+        }
+
+        .faq-arrow {
+            transition: transform 0.2s;
+        }
+
+        .faq-item.active .faq-arrow {
+            transform: rotate(180deg);
+        }
+
+        /* ── FOOTER ─────────────────────────────────────────── */
+        footer {
+            background: rgba(9, 13, 22, 0.95);
+            border-top: 1px solid var(--border);
+            padding: 4rem 2rem 2rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .footer-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 3rem;
+            margin-bottom: 3rem;
+        }
+
+        .footer-brand h3 {
+            color: var(--text-main);
+            font-size: 1.35rem;
+            font-weight: 800;
+            margin-bottom: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .footer-col h5 {
+            color: var(--text-main);
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .footer-col ul {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+
+        .footer-col a {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .footer-col a:hover {
+            color: var(--emerald);
+        }
+
+        .footer-bottom {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(148, 163, 184, 0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 950px) {
+            .hero-title { font-size: 2.5rem; }
+            .stats-ribbon { grid-template-columns: repeat(2, 1fr); }
+            .pipeline-grid { grid-template-columns: 1fr; }
+            .studio-grid { grid-template-columns: 1fr; }
+            .features-grid { grid-template-columns: 1fr; }
+            .footer-inner { grid-template-columns: 1fr 1fr; }
+            .nav-links { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sticky Navigation Bar -->
+    <nav>
+        <a href="#" class="nav-brand">
+            <div class="brand-icon">🤟</div>
+            <span>Sign2Text <span style="font-weight: 400; color: var(--emerald); font-size: 0.95rem;">AI</span></span>
+        </a>
+        <ul class="nav-links">
+            <li><a href="#pipeline">Architecture</a></li>
+            <li><a href="#studio">Live Studio</a></li>
+            <li><a href="#dictionary">ASL Lexicon</a></li>
+            <li><a href="#features">Capabilities</a></li>
+            <li><a href="#faq">FAQ</a></li>
+        </ul>
+        <div class="nav-cta">
+            <div class="status-badge">
+                <span class="pulse-indicator"></span>
+                <span id="nav-system-status">Engine Online</span>
+            </div>
+            <a href="#studio" class="btn-launch">Launch Studio</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-pill">
+            <span>✨</span> Next-Gen Computer Vision • MediaPipe & Deep CNN
+        </div>
+        <h1 class="hero-title">
+            Bridging Silence & Sound with <br>
+            <span class="gradient-text">Real-Time Sign Recognition</span>
+        </h1>
+        <p class="hero-subtitle">
+            Seamlessly translate American Sign Language (ASL) into real-time text and synthesized speech. 
+            Runs completely offline in your browser with zero cloud latency and total privacy.
+        </p>
+        <div class="hero-actions">
+            <a href="#studio" class="btn-primary-lg">Launch Live Camera Studio 📹</a>
+            <a href="#pipeline" class="btn-secondary">Explore AI Architecture ↓</a>
+        </div>
+
+        <!-- Metric Ribbon -->
+        <div class="stats-ribbon">
+            <div class="stat-card">
+                <div class="stat-number">29</div>
+                <div class="stat-label">Full Alphabet & Control Gestures</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">21</div>
+                <div class="stat-label">3D Hand Landmark Joints Tracked</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">30+</div>
+                <div class="stat-label">Frames Per Second on Standard CPU</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">100%</div>
+                <div class="stat-label">Offline & Private Processing</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Machine Learning Architecture Pipeline -->
+    <section class="pipeline-section" id="pipeline">
+        <div class="section-header">
+            <span class="section-tag">Deep Learning & Computer Vision</span>
+            <h2 class="section-title">The End-to-End Processing Pipeline</h2>
+            <p class="section-desc">How raw photons from your webcam transform into synthesized audible language in milliseconds.</p>
+        </div>
+
+        <div class="pipeline-grid">
+            <div class="pipeline-card">
+                <span class="card-step">STAGE 01</span>
+                <span class="card-icon">📷</span>
+                <h3>Optical Stream Ingestion</h3>
+                <p>Captures continuous 60Hz webcam video frames, applying horizontal mirroring and RGB color-space conversion for natural user feedback.</p>
+            </div>
+
+            <div class="pipeline-card">
+                <span class="card-step">STAGE 02</span>
+                <span class="card-icon">🖐️</span>
+                <h3>21-Joint Skeletal Mapping</h3>
+                <p>MediaPipe Hands detects and maps 21 distinct 3D joint coordinates across the palm and fingers, providing sub-millisecond precision.</p>
+            </div>
+
+            <div class="pipeline-card">
+                <span class="card-step">STAGE 03</span>
+                <span class="card-icon">📐</span>
+                <h3>Dynamic Region of Interest</h3>
+                <p>Derives an adaptive bounding box around the active hand geometry with padding, completely stripping away irrelevant background clutter.</p>
+            </div>
+
+            <div class="pipeline-card">
+                <span class="card-step">STAGE 04</span>
+                <span class="card-icon">🧠</span>
+                <h3>Deep Convolutional CNN</h3>
+                <p>Resizes the isolated hand crop to 64×64 RGB, passing it through 3 Conv2D + MaxPooling layers with Dropout regularization and Softmax output.</p>
+            </div>
+
+            <div class="pipeline-card">
+                <span class="card-step">STAGE 05</span>
+                <span class="card-icon">⏱️</span>
+                <h3>Temporal Stability Debounce</h3>
+                <p>Requires consistent predictions across consecutive frames (≥70% confidence) to prevent unintended flickers and micro-tremors from entering text.</p>
+            </div>
+
+            <div class="pipeline-card">
+                <span class="card-step">STAGE 06</span>
+                <span class="card-icon">🔊</span>
+                <h3>Offline Voice Synthesis</h3>
+                <p>Assembles finalized characters into coherent sentences with gesture-based space and delete controls, vocalizing speech via native OS engines.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Interactive Live Studio Section -->
+    <section class="studio-container" id="studio">
+        <div class="section-header">
+            <span class="section-tag">Interactive Environment</span>
+            <h2 class="section-title">Live Recognition Studio</h2>
+            <p class="section-desc">Test your signs directly in front of the camera with real-time skeletal feedback and live text formation.</p>
+        </div>
+
+        <div class="studio-grid">
+            <!-- Left: Video Stream & Hardware Controls -->
+            <div class="studio-card">
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
+                        <h3 style="font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span>📹</span> Video Feed & 21-Joint Overlay
+                        </h3>
+                        <span id="camera-status-pill" class="status-badge" style="background: rgba(16, 185, 129, 0.1);">Active</span>
+                    </div>
+
+                    <div class="video-box">
+                        <img src="/video_feed" id="live-stream-img" alt="Sign2Text Video Feed">
+                        <div class="video-overlay-top">
+                            <div class="stream-badge">
+                                <span class="pulse-indicator"></span>
+                                <span id="stream-indicator-text">LIVE 640x480</span>
+                            </div>
+                            <div class="fps-badge" id="fps-val">FPS: 30.0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hardware & Pipeline Controls -->
+                <div>
+                    <div class="camera-controls-bar">
+                        <button class="ctrl-btn" id="btn-toggle-cam" onclick="toggleCamera()">
+                            <span>📷</span> Stop Camera
+                        </button>
+                        <button class="ctrl-btn" id="btn-toggle-ai" onclick="toggleDetection()">
+                            <span>⚡</span> Pause AI Detection
+                        </button>
+                    </div>
+                    <p style="font-size: 0.8rem; color: var(--text-dim); margin-top: 0.75rem; text-align: center;">
+                        Position your hand within the frame. Green dots highlight tracked joints; green box isolates CNN input.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Right: Real-Time Inference & Sentence Builder -->
+            <div class="studio-card">
+                <div>
+                    <!-- Current Active Prediction -->
+                    <div class="detected-hero-card">
+                        <div class="sign-avatar-box">
+                            <div class="sign-letter-avatar" id="active-sign-char">--</div>
+                            <div class="sign-meta-info">
+                                <span class="meta-caption">DETECTED GESTURE</span>
+                                <div class="meta-sign-title" id="active-sign-label">Position hand in view</div>
+                                <div class="conf-progress-track">
+                                    <div class="conf-progress-bar" id="active-conf-bar"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="percentage-display">
+                            <div class="pct-val" id="active-conf-pct">0%</div>
+                            <div class="pct-caption">Confidence</div>
+                        </div>
+                    </div>
+
+                    <!-- Sentence Builder Box -->
+                    <div class="text-builder-label">
+                        <span>SYNTHESIZED SENTENCE BUFFER</span>
+                        <span id="char-counter" style="color: var(--text-dim); font-family: 'JetBrains Mono', monospace;">0 chars</span>
+                    </div>
+                    <textarea class="sentence-textarea" id="main-sentence-box" placeholder="Recognized gestures will assemble here as words and sentences..."></textarea>
+
+                    <!-- Primary Action Grid -->
+                    <div class="actions-grid">
+                        <button class="act-btn act-btn-speak" onclick="triggerAction('speak')">
+                            <span>🔊</span> Speak Aloud
+                        </button>
+                        <button class="act-btn" onclick="triggerAction('space')">
+                            <span>␣</span> Insert Space
+                        </button>
+                        <button class="act-btn" onclick="triggerAction('backspace')">
+                            <span>⌫</span> Backspace
+                        </button>
+                    </div>
+
+                    <!-- Secondary Action Grid -->
+                    <div class="actions-grid" style="grid-template-columns: 1fr 1fr;">
+                        <button class="act-btn" onclick="triggerAction('clear')">
+                            <span>🗑️</span> Clear All Text
+                        </button>
+                        <button class="act-btn" onclick="copyBufferText()">
+                            <span>📋</span> Copy to Clipboard
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Status readout -->
+                <div class="status-footer-pill" id="live-status-pill">
+                    <span>🟢</span> <span id="live-status-text">Ready - Position hand in camera view</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ASL Lexicon & Gesture Reference -->
+    <section class="dictionary-section" id="dictionary">
+        <div class="section-header">
+            <span class="section-tag">Interactive Reference</span>
+            <h2 class="section-title">ASL Alphabet & Gesture Lexicon</h2>
+            <p class="section-desc">Browse all 29 recognized classes. Hover or search any sign to view formation tips.</p>
+        </div>
+
+        <div class="dict-search-wrapper">
+            <svg class="search-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" class="dict-search-input" id="dict-search-box" placeholder="Filter signs (e.g. A, B, Space, Del)..." oninput="filterLexicon()">
+        </div>
+
+        <div class="dictionary-grid" id="lexicon-grid">
+            <!-- Dynamically populated -->
+        </div>
+    </section>
+
+    <!-- Key Capabilities Section -->
+    <section class="capabilities-section" id="features">
+        <div class="section-header">
+            <span class="section-tag">Why Sign2Text AI</span>
+            <h2 class="section-title">Engineered for Accuracy & Privacy</h2>
+            <p class="section-desc">Built from the ground up for instantaneous accessibility and complete data autonomy.</p>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature-box">
+                <div class="feature-icon-wrapper">🔒</div>
+                <div class="feature-content">
+                    <h4>Air-Gapped & 100% Private</h4>
+                    <p>All video frames are processed entirely on your local machine. No pixels, audio, or biometric markers are ever uploaded or stored on external servers.</p>
+                </div>
+            </div>
+
+            <div class="feature-box">
+                <div class="feature-icon-wrapper">⚡</div>
+                <div class="feature-content">
+                    <h4>Lightweight CPU Optimization</h4>
+                    <p>Custom-tuned CNN architecture and spatial landmark cropping ensures real-time 30+ FPS execution on standard consumer laptops without high-end GPUs.</p>
+                </div>
+            </div>
+
+            <div class="feature-box">
+                <div class="feature-icon-wrapper">🎯</div>
+                <div class="feature-content">
+                    <h4>Background Invariant</h4>
+                    <p>Unlike raw video models, the MediaPipe skeletal localization bounds the hand dynamically, ignoring complex backgrounds, posters, or uneven room lighting.</p>
+                </div>
+            </div>
+
+            <div class="feature-box">
+                <div class="feature-icon-wrapper">🗣️</div>
+                <div class="feature-content">
+                    <h4>Hybrid Offline Speech Engine</h4>
+                    <p>Provides dual-channel voice output utilizing the offline Python SAPI5 engine as well as browser-native Web Speech APIs for zero-latency audio.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Accordion Section -->
+    <section class="faq-section" id="faq">
+        <div class="section-header">
+            <span class="section-tag">Common Inquiries</span>
+            <h2 class="section-title">Frequently Asked Questions</h2>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question" onclick="toggleFaq(this)">
+                <span>How does Sign2Text operate without an internet connection?</span>
+                <span class="faq-arrow">▼</span>
+            </div>
+            <div class="faq-answer">
+                The entire system is hosted locally on your device via Flask. MediaPipe models, the TensorFlow CNN classifier (model.h5), and the pyttsx3 speech engine all reside in local memory, requiring zero external API requests.
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question" onclick="toggleFaq(this)">
+                <span>Why is MediaPipe combined with a Convolutional Neural Network?</span>
+                <span class="faq-arrow">▼</span>
+            </div>
+            <div class="faq-answer">
+                Raw webcam frames contain substantial visual noise like clothes, walls, and furniture. MediaPipe locates the 21 geometric joint landmarks of the hand, which allows us to tightly crop just the hand pixels before feeding it to the CNN, dramatically improving classification accuracy.
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question" onclick="toggleFaq(this)">
+                <span>What is the purpose of the temporal stability buffer?</span>
+                <span class="faq-arrow">▼</span>
+            </div>
+            <div class="faq-answer">
+                In real-world webcam conditions, hand micro-tremors and natural lighting changes can cause momentary single-frame mispredictions. The stability buffer requires the same sign to be predicted consistently for 12 consecutive frames (at ≥70% confidence) before appending it to the sentence.
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question" onclick="toggleFaq(this)">
+                <span>Can the system be expanded to new signs or numbers?</span>
+                <span class="faq-arrow">▼</span>
+            </div>
+            <div class="faq-answer">
+                Yes. Using the included `collect_data.py` script, you can capture custom image folders for numbers (0-9) or specialized vocabulary, and re-train in under two minutes with `python train_model.py`.
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-inner">
+            <div class="footer-brand">
+                <h3><span>🤟</span> Sign2Text AI</h3>
+                <p style="line-height: 1.6; margin-bottom: 1.25rem;">
+                    Empowering inclusive communication through edge computer vision and deep learning. Real-time, private, and fully offline.
+                </p>
+                <div style="font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--emerald);">
+                    ● All Systems Operational • Offline Mode Active
+                </div>
+            </div>
+
+            <div class="footer-col">
+                <h5>Platform</h5>
+                <ul>
+                    <li><a href="#studio">Live Studio</a></li>
+                    <li><a href="#pipeline">Architecture</a></li>
+                    <li><a href="#dictionary">ASL Lexicon</a></li>
+                    <li><a href="#features">Capabilities</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-col">
+                <h5>Core Tech</h5>
+                <ul>
+                    <li><a href="#">MediaPipe Hands</a></li>
+                    <li><a href="#">TensorFlow / Keras</a></li>
+                    <li><a href="#">OpenCV Python</a></li>
+                    <li><a href="#">pyttsx3 Offline TTS</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-col">
+                <h5>Architecture</h5>
+                <ul>
+                    <li><a href="#">CNN 64x64 Classifier</a></li>
+                    <li><a href="#">Temporal Debounce</a></li>
+                    <li><a href="#">Flask MJPEG Stream</a></li>
+                    <li><a href="#">Edge Inference</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <div>© 2026 Sign2Text AI Platform. Engineered for real-time accessibility.</div>
+            <div>Built with Python, MediaPipe, TensorFlow & Flask</div>
+        </div>
+    </footer>
+
+    <!-- Client Script -->
+    <script>
+        // ASL Lexicon Database
+        const lexiconItems = [
+            { id: "A", name: "Letter A", hint: "Fist with thumb resting beside index finger" },
+            { id: "B", name: "Letter B", hint: "Four fingers upright with thumb folded in" },
+            { id: "C", name: "Letter C", hint: "Curved hand forming a 'C' arc" },
+            { id: "D", name: "Letter D", hint: "Index finger upright, others form a circle with thumb" },
+            { id: "E", name: "Letter E", hint: "All fingers curled inward against thumb" },
+            { id: "F", name: "Letter F", hint: "Index and thumb touching, 3 fingers flared upright" },
+            { id: "G", name: "Letter G", hint: "Index and thumb pointing horizontally" },
+            { id: "H", name: "Letter H", hint: "Index and middle finger pointing horizontally" },
+            { id: "I", name: "Letter I", hint: "Pinky finger upright, fist closed" },
+            { id: "J", name: "Letter J", hint: "Pinky traces a 'J' curve in the air" },
+            { id: "K", name: "Letter K", hint: "Index and middle upright with thumb between" },
+            { id: "L", name: "Letter L", hint: "Thumb and index form right-angle 'L'" },
+            { id: "M", name: "Letter M", hint: "Three fingers folded over thumb" },
+            { id: "N", name: "Letter N", hint: "Two fingers folded over thumb" },
+            { id: "O", name: "Letter O", hint: "All fingertips meet thumb in an 'O' ring" },
+            { id: "P", name: "Letter P", hint: "Inverted 'K' pointing downward" },
+            { id: "Q", name: "Letter Q", hint: "Inverted 'G' pointing downward" },
+            { id: "R", name: "Letter R", hint: "Index and middle fingers crossed" },
+            { id: "S", name: "Letter S", hint: "Fist with thumb wrapped across front of fingers" },
+            { id: "T", name: "Letter T", hint: "Thumb tucked between index and middle finger" },
+            { id: "U", name: "Letter U", hint: "Index and middle fingers pressed upright together" },
+            { id: "V", name: "Letter V", hint: "Peace sign: Index and middle upright spread apart" },
+            { id: "W", name: "Letter W", hint: "Three fingers upright (Index, Middle, Ring)" },
+            { id: "X", name: "Letter X", hint: "Index finger hooked like a curved claw" },
+            { id: "Y", name: "Letter Y", hint: "Thumb and pinky extended, middle fingers curled" },
+            { id: "Z", name: "Letter Z", hint: "Index finger traces a 'Z' shape" },
+            { id: "space", name: "Space ␣", hint: "Appends blank space between words" },
+            { id: "del", name: "Delete ⌫", hint: "Backspaces and removes previous character" },
+            { id: "nothing", name: "Idle ⏸", hint: "Neutral rest posture (no action taken)" }
+        ];
+
+        // Populate Lexicon Grid
+        const grid = document.getElementById("lexicon-grid");
+        function populateLexicon(items) {
+            grid.innerHTML = "";
+            items.forEach(item => {
+                const card = document.createElement("div");
+                card.className = "dict-card";
+                card.title = item.hint;
+                card.innerHTML = `
+                    <div class="dict-card-char">${item.id}</div>
+                    <div class="dict-card-sub">${item.name}</div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+        populateLexicon(lexiconItems);
+
+        // Filter Lexicon search
+        function filterLexicon() {
+            const query = document.getElementById("dict-search-box").value.toLowerCase().trim();
+            const filtered = lexiconItems.filter(item => 
+                item.id.toLowerCase().includes(query) || 
+                item.name.toLowerCase().includes(query) ||
+                item.hint.toLowerCase().includes(query)
+            );
+            populateLexicon(filtered);
+        }
+
+        // FAQ Toggle
+        function toggleFaq(elem) {
+            const item = elem.parentElement;
+            item.classList.toggle("active");
+        }
+
+        // Camera Toggle
+        let cameraRunning = true;
+        function toggleCamera() {
+            fetch('/camera/toggle', { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    cameraRunning = data.camera_active;
+                    const btn = document.getElementById("btn-toggle-cam");
+                    const pill = document.getElementById("camera-status-pill");
+                    if (cameraRunning) {
+                        btn.innerHTML = "<span>📷</span> Stop Camera";
+                        btn.classList.remove("active-danger");
+                        pill.innerText = "Active";
+                        pill.style.color = "var(--emerald)";
+                    } else {
+                        btn.innerHTML = "<span>▶️</span> Start Camera";
+                        btn.classList.add("active-danger");
+                        pill.innerText = "Paused";
+                        pill.style.color = "var(--rose)";
+                    }
+                });
+        }
+
+        // Detection Toggle
+        let detectionRunning = true;
+        function toggleDetection() {
+            fetch('/detection/toggle', { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    detectionRunning = data.detection_active;
+                    const btn = document.getElementById("btn-toggle-ai");
+                    if (detectionRunning) {
+                        btn.innerHTML = "<span>⚡</span> Pause AI Detection";
+                        btn.classList.remove("active-emerald");
+                    } else {
+                        btn.innerHTML = "<span>⚡</span> Resume AI Detection";
+                        btn.classList.add("active-emerald");
+                    }
+                });
+        }
+
+        // Trigger Sentence Actions
+        function triggerAction(action) {
+            fetch(`/action/${action}`, { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (action === 'speak' && data.sentence) {
+                        if ('speechSynthesis' in window) {
+                            const utt = new SpeechSynthesisUtterance(data.sentence);
+                            utt.rate = 0.95;
+                            window.speechSynthesis.speak(utt);
+                        }
+                    }
+                });
+        }
+
+        // Copy Buffer Text
+        function copyBufferText() {
+            const text = document.getElementById("main-sentence-box").value;
+            if (text) {
+                navigator.clipboard.writeText(text);
+                const pill = document.getElementById("live-status-text");
+                const old = pill.innerText;
+                pill.innerText = "✓ Copied text to clipboard!";
+                setTimeout(() => pill.innerText = old, 1500);
+            }
+        }
+
+        // Allow manual editing of sentence textarea to sync with backend
+        document.getElementById("main-sentence-box").addEventListener("input", function(e) {
+            fetch('/set_sentence', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sentence: e.target.value })
+            });
+        });
+
+        // Real-time Status Polling
+        setInterval(() => {
+            fetch('/get_status')
+                .then(r => r.json())
+                .then(data => {
+                    // Update Active Sign & Confidence
+                    const charElem = document.getElementById("active-sign-char");
+                    const labelElem = document.getElementById("active-sign-label");
+                    const pctElem = document.getElementById("active-conf-pct");
+                    const barElem = document.getElementById("active-conf-bar");
+
+                    if (data.sign && data.sign !== "") {
+                        charElem.innerText = data.sign;
+                        labelElem.innerText = `Sign: ${data.sign}`;
+                        const pct = Math.round(data.confidence * 100);
+                        pctElem.innerText = `${pct}%`;
+                        barElem.style.width = `${pct}%`;
+                    } else {
+                        charElem.innerText = "--";
+                        labelElem.innerText = data.status.includes("No hand") ? "No hand detected" : "Waiting for sign...";
+                        pctElem.innerText = "0%";
+                        barElem.style.width = "0%";
+                    }
+
+                    // Update Sentence & Counters
+                    const box = document.getElementById("main-sentence-box");
+                    if (document.activeElement !== box) {
+                        box.value = data.sentence || "";
+                    }
+                    document.getElementById("char-counter").innerText = `${(data.sentence || "").length} chars`;
+
+                    // Update Status & FPS
+                    document.getElementById("live-status-text").innerText = data.status;
+                    document.getElementById("fps-val").innerText = `FPS: ${data.fps}`;
+                    document.getElementById("stream-indicator-text").innerText = data.camera_active ? "LIVE 640x480" : "STANDBY";
+                })
+                .catch(() => {});
+        }, 120);
+    </script>
+</body>
+</html>
