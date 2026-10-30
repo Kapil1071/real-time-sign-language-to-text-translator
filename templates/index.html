@@ -1461,8 +1461,11 @@
             });
         });
 
-        // Real-time Status Polling
+        // Real-time Status Polling (throttled to 350ms to prevent socket congestion)
+        let isPolling = false;
         setInterval(() => {
+            if (isPolling) return;
+            isPolling = true;
             fetch('/get_status')
                 .then(r => r.json())
                 .then(data => {
@@ -1497,8 +1500,11 @@
                     document.getElementById("fps-val").innerText = `FPS: ${data.fps}`;
                     document.getElementById("stream-indicator-text").innerText = data.camera_active ? "LIVE 640x480" : "STANDBY";
                 })
-                .catch(() => {});
-        }, 120);
+                .catch(() => {})
+                .finally(() => {
+                    isPolling = false;
+                });
+        }, 350);
     </script>
 </body>
 </html>
